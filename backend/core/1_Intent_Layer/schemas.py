@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, Union
 from enum import Enum
+from typing import List, Optional
 
 class ComponentType(str, Enum):
     PCF = "photonic_crystal_fiber"
@@ -75,3 +76,25 @@ class DesignResponse(BaseModel):
     suggested_geometry: Union[PCFGeometry, WaveguideGeometry, dict] 
     confidence_score: float = Field(..., ge=0, le=1.0)
     validation_status: str
+    
+class ResearchPaperIngestion(BaseModel):
+    title: str = Field(..., description="Title of the research paper")
+    authors: List[str]
+    doi: Optional[str] = None
+    topic_category: str = Field(..., description="PCF, Silicon Photonics, Metasurfaces, etc.")
+
+    core_material: str = Field("Si", description="Material of the waveguide core")
+    cladding_material: str = Field("SiO2", description="Material of the cladding or PCF background")
+    sellmeier_coefficients: Optional[dict] = Field(None, description="Extracted dispersion data if provided")
+
+    lattice_type: Optional[str] = Field(None, description="Hexagonal, Square (for PCFs)")
+    hole_diameter_nm: Optional[float] = None
+    pitch_nm: Optional[float] = Field(None, description="Distance between hole centers")
+    waveguide_width_nm: Optional[float] = None
+    waveguide_height_nm: Optional[float] = None
+
+    operating_wavelength_nm: float = Field(1550.0, description="Central wavelength analyzed in the paper")
+    reported_neff: Optional[float] = Field(None, description="Reported effective refractive index")
+    reported_dispersion: Optional[float] = Field(None, description="Reported dispersion parameter (ps/nm/km)")
+
+    suggested_solver: str = Field("lumerical", description="Lumerical FDE, Lumerical FDTD, COMSOL")
