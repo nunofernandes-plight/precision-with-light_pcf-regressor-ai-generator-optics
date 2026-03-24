@@ -1,3 +1,10 @@
+from fastapi import APIRouter
+# Import your schema (adjust the path based on your exact folder structure)
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from 1_intent_layer.schemas import ResearchPaperIngestion
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -31,6 +38,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+router_research = APIRouter(prefix="/research", tags=["Scholar Bridge"])
+
+@router_research.post("/ingest-paper")
+async def ingest_research_paper(paper: ResearchPaperIngestion):
+    pipeline_logs = [f"📖 Ingesting paper: {paper.title}"]
+
+    core = paper.core_material
+    cladding = paper.cladding_material
+    pipeline_logs.append(f"🧪 Material System: {core} Core with {cladding} Cladding")
+
+    if paper.topic_category.lower() == "pcf":
+        geometry_summary = {
+            "type": "photonic_crystal_fiber",
+            "lattice": paper.lattice_type or "hexagonal",
+            "pitch_nm": paper.pitch_nm,
+            "hole_diameter_nm": paper.hole_diameter_nm
+        }
+    else:
+        geometry_summary = {
+            "type": "waveguide",
+            "width_nm": paper.waveguide_width_nm,
+            "height_nm": paper.waveguide_height_nm
+        }
+
+    return {
+        "status": "success",
+        "paper_metadata": {"title": paper.title, "category": paper.topic_category},
+        "reconstructed_geometry": geometry_summary,
+        "suggested_simulation": {"engine": paper.suggested_solver, "wavelength_nm": paper.operating_wavelength_nm},
+        "pipeline_logs": pipeline_logs
+    }
 
 # Initialize Services
 grader = ReflexiveGrader()
@@ -109,6 +147,10 @@ async def generate_and_verify(request: UserPrompt):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+app.include_router(router_research)
+
+
 
 
 
