@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, Union
 from enum import Enum
-from typing import List, Optional
+from typing import List
 
 class ComponentType(str, Enum):
     PCF = "photonic_crystal_fiber"
