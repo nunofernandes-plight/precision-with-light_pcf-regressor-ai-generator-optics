@@ -165,6 +165,52 @@ async def generate_and_verify(request: UserPrompt):
 
 app.include_router(router_research)
 
+# backend/api/gateway_v2.py — add to existing router
+
+from fastapi import APIRouter, HTTPException
+from ..simulation_bridge.bridge import get_adapter
+from ..simulation_bridge.base_adapter import SimulationInput, SimulationResult
+
+router = APIRouter(prefix="/simulation", tags=["Simulation Bridge"])
+
+
+@router.post("/submit", response_model=dict)
+async def submit_simulation(sim_input: SimulationInput):
+    """
+    Submit a geometry for FDTD verification.
+    Auto-selects best available adapter (Tidy3D → Lumerical → COMSOL).
+    Returns job_id for async polling.
+    """
+    try:
+        adapter = get_adapter(sim_input)
+        job_id  = adapter.submit(sim_input)
+        return {
+            "job_id": job_id,
+            "adapter": adapter.__class__.__name__,
+            "status": "submitted"
+        }
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/result/{job_id}", response_model=SimulationResult)
+async def get_simulation_result(job_id: str, adapter_name: str = "tidy3d"):
+    """
+    Poll for and retrieve completed simulation result.
+    """
+    adapters = {
+        "tidy3d":   lambda: Tidy3DAdapter(),
+        "lumerical": lambda: LumericalAdapter(),
+        "comsol":    lambda: COMSOLAdapter(),
+    }
+    if adapter_name not in adapters:
+        raise HTTPException(status_code=400, detail=f"Unknown adapter: {adapter_name}")
+    try:
+        adapter = adapters[adapter_name]()
+        return adapter.retrieve(job_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
