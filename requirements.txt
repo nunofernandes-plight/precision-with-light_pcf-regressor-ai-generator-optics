@@ -5,3 +5,10 @@ pymongo==4.6.0
 torch==2.1.0  # CPU version is fine for inference demos, but use CUDA for production
 gdstk==0.9.4
 numpy==1.26.1
+
+```Python
+# requirements_tidy3d.txt (add to main requirements.txt)
+tidy3d>=2.7.0
+gdstk>=0.9.0        # for GDS geometry ingestion
+numpy>=1.24.0
+```
